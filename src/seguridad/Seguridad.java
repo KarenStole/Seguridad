@@ -20,9 +20,6 @@ public class Seguridad {
      */
     public static void main(String[] args) throws Exception {
         // TODO code application logic here
-        Pair<byte[], Key> par = AESSymetricCrypto.EncryptPass("hola");
-        byte[] encriptado = par.getKey();
-        
         
     }
     
