@@ -38,8 +38,8 @@ public class DataBaseController {
       }
    }
    
-    public static void resgistrarUsuario(String user, String passHash) throws SQLException{
-            String sqlInsertUser = "INSERT INTO Users (users_name, password) values ('"+ user+ "','"+ passHash+"');";
+    public static void resgistrarUsuario(String user, String passHash, String clave) throws SQLException{
+            String sqlInsertUser = "INSERT INTO Users (users_name, password, clave) values ('"+ user+ "','"+ passHash+"','"+clave+"');";
             Connection con = DataBaseController.conectarBD();
             Statement st = con.createStatement();
             st.execute(sqlInsertUser);

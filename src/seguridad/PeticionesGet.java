@@ -9,75 +9,50 @@ package seguridad;
  *
  * @author Karen
  */
-import static com.sun.org.apache.xerces.internal.util.FeatureState.is;
-import static com.sun.xml.internal.ws.api.message.Packet.Status.Request;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import javax.json.Json;
-import javax.xml.ws.Response;
-import jdk.nashorn.internal.ir.RuntimeNode.Request;
-import okhttp3.OkHttpClient;
-import okhttp3.Request.Builder;
-import org.json.JSONML;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
 
- 
 public class PeticionesGet {
- 
-    public static void sendGet(String prefixHash, String suffixHash) throws IOException {
-        
-               URL url;
-        try {
-            // Creando un objeto URL
-            url = new URL("http://api.pwnedpasswords.com/range/"+prefixHash);
-            System.out.print(url);
- 
-            // Realizando la petición GET
-            URLConnection con = url.openConnection();
-            con.setRequestProperty("User-Agent", "Pwnage-Checker-For-iOS");
-            InputStream is = con.getInputStream();
- 
-            // Leyendo el resultado
-           /* BufferedReader in = new BufferedReader(new InputStreamReader(
-                    con.getInputStream()));*/
- 
-            int linea= is.read();
+   public static boolean sendGet(String hash, String suffixHash) {
+      boolean find= false;
+       try {
+         // Se abre la conexión
+         URL url = new URL("https://api.pwnedpasswords.com/range/"+hash);
+         URLConnection conexion = url.openConnection();
+         conexion.setRequestProperty("User-Agent", "App de Prueba");
+         conexion.connect();
+         
+         // Lectura
+         InputStream is = conexion.getInputStream();
+         BufferedReader br = new BufferedReader(new InputStreamReader(is));
+         char[] buffer = new char[1000];
+         int leido;
+         while ((leido = br.read(buffer)) > 0) {
+            String [] response = new String(buffer, 0, leido).split("\\r?\\n");
 
-            System.out.println(linea);
-            /*while (linea != null) {
-                   if (linea.startsWith(suffixHash)) {
-                        System.out.println("password found, count: " + linea.substring(linea.indexOf(":") + 1));
-                        return;
-                    }
-            }*/
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+            for (String line : response) {
+              if (line.startsWith(suffixHash)) {
+                find= true;
+                System.out.println(
+                "Password encontrada, veces: " + line.substring(line.indexOf(":") + 1));
+                System.out.println(
+                "Has un mejor intento ;)");
+                return find;
+          }
         }
- 
-
-/*        okhttp3.OkHttpClient client = new OkHttpClient();
-        String url = "https://api.pwnedpasswords.com/range/" + prefixHash;
-
-        okhttp3.Request request = new Builder().url(url).build();
-        okhttp3.Response response = client.newCall(request).execute();
-        okhttp3.ResponseBody body = response.body();
-            if (body != null) {
-                String hashes = body.toString();
-                String lines[] = hashes.split("\\r?\\n");
-
-                for (String line : lines) {
-                    if (line.startsWith(suffixHash)) {
-                        System.out.println("password found, count: " + line.substring(line.indexOf(":") + 1));
-                        return;
-                    }
-                }
-                System.out.println("password not found");
-            }*/
-     
-    }
+        
+      }
+         System.out.println("Wow, excelente opción :D");
+         return find;
+      } catch (MalformedURLException e) {
+          return find;
+      } catch (IOException e) {
+          return find;
+      }
+   }
 }

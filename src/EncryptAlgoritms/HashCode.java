@@ -16,16 +16,21 @@ import java.security.NoSuchAlgorithmException;
 public class HashCode {
     public static String hashPass(String pass) throws NoSuchAlgorithmException{
         
-        /* SHA-384 */
-
-        MessageDigest objSHA384 = MessageDigest.getInstance("SHA-384");
-        byte[] bytSHA384 = objSHA384.digest(pass.getBytes());
-        BigInteger intNumSHA384 = new BigInteger(1, bytSHA384);
-        String hcSHA384 = intNumSHA384.toString(16);
-        while (hcSHA384.length() < 96) {
-            hcSHA384 = "0" + hcSHA384;
+       try {
+            java.security.MessageDigest md = java.security.MessageDigest
+                    .getInstance("SHA-1");
+            byte[] array = md.digest(pass.getBytes());
+            StringBuffer sb = new StringBuffer();
+            for (int i = 0; i < array.length; ++i) {
+                sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100)
+                        .substring(1, 3));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            System.out.println(e.getMessage());
         }
-        return hcSHA384;
+        return null;
+    
     }
 
     

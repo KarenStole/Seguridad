@@ -1,25 +1,18 @@
 package EncryptAlgoritms;
 
-import static java.awt.PageAttributes.MediaType.A;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import javafx.util.Pair;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Ejemplo de encriptado y desencriptado con algoritmo AES.
@@ -29,9 +22,11 @@ import javax.crypto.spec.SecretKeySpec;
  * @author Chuidiang
  *
  */
-public class AESSymetricCrypto {
+public class DESSymetricCrypto {
+    
+    private static File carpeta;
 
-    public static void Encriptar(String file, String clave) throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException
+    public static void Encriptar(String file, String clave,String nombreFichero) throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException
        {
 
              //pasar clave a la clase SecretKey
@@ -45,17 +40,14 @@ public class AESSymetricCrypto {
                 Cipher cifrado = Cipher.getInstance("DES");
 
                 //Escojo modo cifrado o descifrado segun sea el caso
-
-                
-                   cifrado.init(Cipher.ENCRYPT_MODE, ks);//MODO CIFRAR
-               /* if (comando2.equals(args[0])){
-                   cifrado.init(Cipher.DECRYPT_MODE, ks);}//MODO DESCIFRAR*/
-
-
+                cifrado.init(Cipher.ENCRYPT_MODE, ks);//MODO CIFRAR
                 //Leer fichero
-
+                carpeta = new File (nombreFichero);
+                carpeta.mkdirs();
+                
                 InputStream archivo = new FileInputStream(file);
-                OutputStream fich_out = new FileOutputStream ( "Salida" );
+                OutputStream fich_out = new FileOutputStream ( carpeta.getPath()+"\\"
+                        +nombreFichero );
 
                 byte[] buffer = new byte[1024];
                 byte[] bloque_cifrado;
@@ -81,9 +73,15 @@ public class AESSymetricCrypto {
 
                 }
                 //Inicializacion de cifrado
-                catch(javax.crypto.NoSuchPaddingException nspe) {} //Instanciacion DES
-                catch(javax.crypto.IllegalBlockSizeException ibse) {}//metodo doFinal
-                catch(javax.crypto.BadPaddingException bpe) {}//metodo doFinal
+                catch(javax.crypto.NoSuchPaddingException nspe) {
+                    System.out.println("nspe");
+                } //Instanciacion DES
+                catch(javax.crypto.IllegalBlockSizeException ibse) {
+                    System.out.println("ibse");
+                }//metodo doFinal
+                catch(javax.crypto.BadPaddingException bpe) {
+                    System.out.println("bpe");
+                }//metodo doFinal
              }
              //leer del teclado la clave como String
              catch(java.io.IOException ioex) {}
@@ -104,8 +102,6 @@ public class AESSymetricCrypto {
 
                 //Escojo modo cifrado o descifrado segun sea el caso
 
-                
-                   //cifrado.init(Cipher.ENCRYPT_MODE, ks);//MODO CIFRAR
                
                    cifrado.init(Cipher.DECRYPT_MODE, ks);//MODO DESCIFRAR*/
 
@@ -113,7 +109,7 @@ public class AESSymetricCrypto {
                 //Leer fichero
 
                 InputStream archivo = new FileInputStream(file);
-                OutputStream fich_out = new FileOutputStream ( "Salida2" );
+                OutputStream fich_out = new FileOutputStream ( "Salida3" );
 
                 byte[] buffer = new byte[1024];
                 byte[] bloque_cifrado;

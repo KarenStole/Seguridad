@@ -1,14 +1,26 @@
 package seguridad;
 
-import EncryptAlgoritms.AESSymetricCrypto;
+import EncryptAlgoritms.DESSymetricCrypto;
+import EncryptAlgoritms.DESSymetricCrypto;
 import EncryptAlgoritms.HashCode;
 import java.io.*;
 import java.nio.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.util.UUID;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.swing.JPasswordField;
 
 public class Crypto
 {
@@ -16,7 +28,7 @@ public class Crypto
     private static String file;
     private static String clave;
     
-	public static void parse() throws NoSuchAlgorithmException, IOException, SQLException, InvalidKeyException, InvalidKeySpecException
+	public static void parse() throws NoSuchAlgorithmException, IOException, SQLException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
   	{
             
                 Crypto.printHelp();
@@ -80,7 +92,7 @@ public class Crypto
 	
 
         @SuppressWarnings("empty-statement")
-	public static void register() throws NoSuchAlgorithmException, IOException, SQLException, InvalidKeyException, InvalidKeySpecException{
+	public static void register() throws NoSuchAlgorithmException, IOException, SQLException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
             System.out.println("****************REGISTRO*******************");
             Scanner inputScanner = new Scanner(System.in);
             System.out.print("Usuario: ");
@@ -93,11 +105,17 @@ public class Crypto
                 String hash = HashCode.hashPass(pass);
                 /***** Parte de haveibennpwned*******/
                 String fiveFirst= hash.substring(0,5);
-                String suffixHash = hash.substring(5);
-                //PeticionesGet.sendGet(fiveFirst, suffixHash);
-
+                String suffixHash = hash.substring(5).toUpperCase();
+                boolean notValid= PeticionesGet.sendGet(fiveFirst, suffixHash);
+                while (notValid){
+                    System.out.print("Password: ");
+                    pass = inputScanner.next();
+                    notValid= PeticionesGet.sendGet(fiveFirst, suffixHash);
+                }
                 /**********Registro de la persona*******/
-                DataBaseController.resgistrarUsuario(user, hash);
+                String key = Crypto.genetateRandomKey();
+                String hashKey=
+                DataBaseController.resgistrarUsuario(user, hash, key);
                 System.out.println("*******************************************************");
                 System.out.println("Felicidades: "+ user +" te has registrado exitosamente!");
                 System.out.println("*******************************************************");
@@ -112,14 +130,16 @@ public class Crypto
             
 
         }
-	public static void login() throws SQLException, NoSuchAlgorithmException, IOException, InvalidKeyException, InvalidKeySpecException{
+	public static void login() throws SQLException, NoSuchAlgorithmException, IOException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
             System.out.println("****************LOGIN*******************");
             Scanner inputScanner = new Scanner(System.in);
             System.out.print("Usuario: ");
             String user = inputScanner.next();
             System.out.print("Contraseña: ");
-            String pass = inputScanner.next();
-            String hash = HashCode.hashPass(pass);
+            JPasswordField pass = new JPasswordField();
+            pass.setActionCommand(inputScanner.next().concat(user));
+
+            String hash = HashCode.hashPass(pass.toString());
             boolean validacion = DataBaseController.validarLogin(user, hash);
             if(validacion){
                 System.out.println("****************USUARIO LOGUEADO*******************");
@@ -151,38 +171,58 @@ public class Crypto
 	
 
 	public static void verify(String fileKey,String file){System.out.println("verify");}
-	public static void encrypt() throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException{
+	public static void encrypt() throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, IOException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
            System.out.println("encrypt");
            Scanner inputScanner = new Scanner(System.in);
-           System.out.print("Usuario: ");
-           Crypto.clave = inputScanner.next();
-           System.out.print("Contraseña: ");
+           System.out.print("Archivo: ");
            Crypto.file = inputScanner.next();
+           System.out.print("Clave para encriptar: ");
+           String key = inputScanner.next();
+           /******Encripto el archivo con la primer clave******/
+           byte[] document=Crypto.readFile(file);
+           SecretKey aeskey = new SecretKeySpec(key.getBytes(),"AES");
+           Cipher encryptCipher = Cipher.getInstance("AES");
+           encryptCipher.init(Cipher.ENCRYPT_MODE, aeskey);
+           byte[] encryptedBytes = encryptCipher.doFinal(document);
+           /********Guardo el archivo encriptado y la clave encriptada ******/
+           String filename=file+".aes";
+           Crypto.saveFile(filename,encryptedBytes);
+           System.out.println("File "+filename+" encripted Ok.");
            
-           AESSymetricCrypto.Encriptar(file, clave);
         }
-	public static void decrypt() throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException{
+	public static void decrypt() throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, IOException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
            System.out.println("decrypt");
            Scanner inputScanner = new Scanner(System.in);
-           System.out.print("Clave: ");
-           Crypto.clave = inputScanner.next();
            System.out.print("Archivo a desencriptar: ");
            Crypto.file = inputScanner.next();
+           System.out.print("Contraseña: ");
+           Crypto.clave = inputScanner.next();
            
-           AESSymetricCrypto.Desencriptar(file, clave);
+           /*Desincripto primero la clave con la contraseña*/
+           Cipher decryptCipher = Cipher.getInstance("AES");
+           
+           /*Cuando tengo la clave desencriptada deincripto el archivo*/
+           byte[] cryptodoc=Crypto.readFile(file);
+           SecretKey aeskey2 = new SecretKeySpec(clave.getBytes(),"AES");
+    	   decryptCipher.init(Cipher.DECRYPT_MODE, aeskey2);
+            byte[] document = decryptCipher.doFinal(cryptodoc);
+            /*Guardo el archivo desincriptado, y la clave tambien pero ENCRIPTADA*/
+            String filename=file.substring(0,file.lastIndexOf('.'));
+            Crypto.saveFile(filename,document);
+		System.out.println("File "+filename+" decripted Ok.");
             }
 
 
-	private byte[] readFile(String filename)
+	private static byte[] readFile(String filename) throws IOException
 	{
-		/*byte[] Bytes = Files.readAllBytes(new File(filename).toPath());
-		return Bytes;*/
-
-		return null;
+		byte[] Bytes = Files.readAllBytes(new File(filename).toPath());
+		return Bytes;
 	}
 
-	private void saveFile(String filename,byte[] data)
+	private static void saveFile(String filename,byte[] data) throws IOException
 	{
+            	Path path= Paths.get(filename);
+		Files.write(path,data);	
 		
 	}
 
@@ -195,5 +235,11 @@ public class Crypto
 
 		return null;
 	}
+        private static String genetateRandomKey(){
+               
+            String uuid = UUID.randomUUID().toString();
+            return uuid;
+    
+        }
 		
 }
